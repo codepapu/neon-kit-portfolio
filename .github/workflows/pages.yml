@@ -1,0 +1,77 @@
+name: Deploy static site to GitHub Pages
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Site URL and base path (user site vs project site)
+        env:
+          OVERRIDE_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
+          OVERRIDE_BASE_PATH: ${{ vars.NEXT_PUBLIC_BASE_PATH }}
+        run: |
+          OWNER="${{ github.repository_owner }}"
+          REPO="${{ github.event.repository.name }}"
+          ORIGIN="https://${OWNER}.github.io"
+          REPO_LC="$(echo "$REPO" | tr '[:upper:]' '[:lower:]')"
+          OWNER_LC="$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')"
+          if [ -n "$OVERRIDE_SITE_URL" ]; then
+            echo "NEXT_PUBLIC_SITE_URL=$OVERRIDE_SITE_URL" >> "$GITHUB_ENV"
+            if [ -n "$OVERRIDE_BASE_PATH" ]; then
+              echo "NEXT_BASE_PATH=$OVERRIDE_BASE_PATH" >> "$GITHUB_ENV"
+              echo "NEXT_PUBLIC_BASE_PATH=$OVERRIDE_BASE_PATH" >> "$GITHUB_ENV"
+            else
+              echo "NEXT_BASE_PATH=" >> "$GITHUB_ENV"
+              echo "NEXT_PUBLIC_BASE_PATH=" >> "$GITHUB_ENV"
+            fi
+            exit 0
+          fi
+          # Repo named <owner>.github.io → site at https://<owner>.github.io/ (no subpath)
+          if [ "$REPO_LC" = "${OWNER_LC}.github.io" ]; then
+            echo "NEXT_PUBLIC_SITE_URL=${ORIGIN}" >> "$GITHUB_ENV"
+            echo "NEXT_BASE_PATH=" >> "$GITHUB_ENV"
+            echo "NEXT_PUBLIC_BASE_PATH=" >> "$GITHUB_ENV"
+          else
+            echo "NEXT_PUBLIC_SITE_URL=${ORIGIN}/${REPO}" >> "$GITHUB_ENV"
+            echo "NEXT_BASE_PATH=${REPO}" >> "$GITHUB_ENV"
+            echo "NEXT_PUBLIC_BASE_PATH=${REPO}" >> "$GITHUB_ENV"
+          fi
+
+      - run: npm ci
+
+      - name: Build static export
+        run: npm run build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
