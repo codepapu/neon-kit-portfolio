@@ -4,11 +4,9 @@ Portfolio site (Next.js static export) for [codepapu](https://github.com/codepap
 
 **Repository:** https://github.com/codepapu/neon-kit-portfolio
 
-**Live demo (GitHub Pages):** https://codepapu.github.io/neon-kit-portfolio/
+**Live demo:** https://neon-kit-portfolio.vercel.app/
 
-**Live demo (Vercel):** https://znis-portfolio.vercel.app/
-
-Enable **Settings → Pages → Source: GitHub Actions**, then push to `main`; the URL above works after the first successful workflow run.
+**GitHub Pages (optional):** https://codepapu.github.io/neon-kit-portfolio/ — enable **Settings → Pages → Source: GitHub Actions**, then deploy from `main`.
 
 **Custom domain (optional):** In Pages, set a domain such as `neon.codepapu.in` and add a DNS **CNAME** to `codepapu.github.io`. In the repo, add Actions **Variables** `NEXT_PUBLIC_SITE_URL` = `https://neon.codepapu.in` and `NEXT_PUBLIC_BASE_PATH` empty (see workflow). Re-run the deploy workflow.
 
